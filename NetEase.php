@@ -120,7 +120,7 @@ class NetEase
     
     public function getDownloadRealUrl(string $id) :string
     {
-        $this->logger->info('Song ID:' . $id .  ' 准备获取歌曲下载的地址...');
+        $this->logger->info('Song ID: ' . $id .  ' 准备获取歌曲下载的地址...');
         $requestUrl = 'http://music.163.com/api/song/enhance/player/url';
 
         $requestParams = [
@@ -145,7 +145,7 @@ class NetEase
                     //todo
                     //url不存在可能是说明 版权问题 不给播放
                     //后期增加使用其他的渠道来获取
-                    $this->logger->info('地址不存在，可能是版权问题。');
+                    $this->logger->info('Song ID: ' . $id . ' 地址无法获取，可能是版权问题。');
                     return '';
                 } else {
                     $realUrl = $item['url'];

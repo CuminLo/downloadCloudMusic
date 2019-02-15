@@ -104,7 +104,14 @@ class Face
                     }
                     $downloadUrl = $info['download_url'];
 
-                    $fielName = $info['name'];
+                    $arName = [];
+                    foreach ($info['ar'] as $ar) { //歌手信息
+                        $arName[] = $ar['name'];
+                    }
+
+                    $alName = $info['al']['name'];
+
+                    $fielName = sprintf('%s - %s - %s', $info['name'], join(' & ', $arName), $alName);
                     $fielName = str_replace([
                         '/'
                     ], '&', $fielName);
