@@ -13,6 +13,12 @@
 php download.php --url [url] --output [download_path]
 ```
 
+可以同时指定多个歌单或单曲：
+
+```php
+php download.php --url https://y.qq.com/n/yqq/song/003JWNKf2kBHa1.html --url https://y.qq.com/n/yqq/song/004f5vwq0hsLu1.html
+```
+
 选项说明：
 - url
     - 必填

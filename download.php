@@ -26,4 +26,8 @@ if (!$downloadPath) {
 
 $face = new Index($downloadPath);
 
+if (is_string($url)) {
+    $url = [$url];
+}
+
 $face->download($url);

@@ -34,24 +34,26 @@ class Index
         }
     }
 
-    public function download(string $url)
+    public function download(array $url)
     {
-        $urlInfo = parse_url($url);
-
         $this->logger->info('准备下载');
 
-        //暂时先这么写
-        if ($urlInfo['host'] === 'music.163.com') {
-            $this->logger->info('网易云音乐');
-            $this->executor = new NetEase($this->logger);
-        } elseif ($urlInfo['host'] === 'y.qq.com') {
-            $this->logger->info('QQ音乐');
-            $this->executor = new Bzqll($this->logger);
+        foreach ($url as $site) {
+            $urlInfo = parse_url($site);
+
+            //暂时先这么写
+            if ($urlInfo['host'] === 'music.163.com') {
+                $this->logger->info('网易云音乐');
+                $this->executor = new NetEase($this->logger);
+            } elseif ($urlInfo['host'] === 'y.qq.com') {
+                $this->logger->info('QQ音乐');
+                $this->executor = new Bzqll($this->logger);
+            }
+    
+            $downloadInfo = $this->preDownload($site);
+    
+            $this->starDownload($downloadInfo);
         }
-
-        $downloadInfo = $this->preDownload($url);
-
-        $this->starDownload($downloadInfo);
     }
 
     public function preDownload(string $url) :array
