@@ -65,7 +65,7 @@ class Index
     {
         $total = count($downloadInfo);
 
-        $max = 30; //创建最大进程数
+        $max = 20; //创建最大进程数
         if ($total <= $max) {
             $max = 1;
         }
