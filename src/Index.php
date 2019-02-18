@@ -114,7 +114,7 @@ class Index
                         ]);
 
                         $info['name']    = $otherInfo['name'] ?? $info['name'];
-                        $info['artists'] = isset($otherInfo['singer']) ? [$otherInfo['singer']] : $info['artists'];
+                        $info['artists'] = isset($otherInfo['singer']) ? $otherInfo['singer'] : $info['artists'];
                         $info['url']     = $otherInfo['url'];
                     }
 
@@ -131,7 +131,7 @@ class Index
                         $fileName = sprintf('%s - %s', $info['name'], $arName);
                     }
 
-                    $fileName = str_replace([ '/' ], '&', $fileName) . '_1';
+                    $fileName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '&', $fileName) . '_1';
                     $this->logger->info($prcessName . ' 开始下载:(临时文件名) ' . $fileName);
                     $filenamePath = sprintf('%s/%s.%s', $this->downloadPath, $fileName, $musicType);
 

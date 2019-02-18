@@ -182,23 +182,23 @@ class Bzqll implements MusicInterface
             }
             if ($item['name'] == $params['title']) {
                 $artists = join(' ', $params['artists']);
-                if (stripos($artists, $item['singer']) !== false) {
-                    $apiUrl = $item['url'];
-                    return [
-                        'url' => $apiUrl
-                    ];
-                    // $this->request->setUrl($apiUrl);
-                    // $this->request->execute();
-                    // $this->request->setRequestType('HEAD');
-                    // return 'https://dl.stream.qqmusic.qq.com/M50000333KqO2oqLez.mp3?vkey=4638D5F19FE51F2A0989C9155337EE31319D7E16BF29AF7F23A46D7E6B7D4E58AC35D441204EB71C08FBF7C5345A2F61795A0D0DB0C62771&guid=1550464128&uin=0&fromtag=53';
+                $singers = explode('/', $item['singer']);
+
+                foreach ($singers as $singer) {
+                    if (stripos($artists, $singer) !== false) {
+                        return [
+                            'singer' => $singers,
+                            'url'    => $item['url']
+                        ];
+                    }
                 }
             }
         }
         //暂时这样 后面增加了其他的API就使用其他的API接口
         return [
-            'url' => $firstValue['url'],
-            'name'=> $firstValue['name'],
-            'singer'=> $firstValue['singer'],
+            'url'   => $firstValue['url'],
+            'name'  => $firstValue['name'],
+            'singer'=> [$firstValue['singer']],
         ];
     }
 }
