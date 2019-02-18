@@ -107,7 +107,7 @@ class Index
                     if (!$info['url']) {
                         $this->logger->info('Song ID: ' . $id . ' 地址无法获取，可能是版权问题。');
                         $this->logger->info('尝试使用其他API获取...');
-                        $api = new Bzqll();
+                        $api = new Bzqll($this->logger);
                         $otherInfo = $api->getSearch([
                             'title'     => $info['name'],
                             'artists'   => $info['artists'],
