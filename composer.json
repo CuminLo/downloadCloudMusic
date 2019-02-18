@@ -1,0 +1,11 @@
+{
+    "require": {
+        "php-ffmpeg/php-ffmpeg": "^0.13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CuminLo\\": "src/",
+            "CuminLo\\Nets\\NetEase\\": "src/163/"
+        }
+    }
+}
