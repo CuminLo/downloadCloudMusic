@@ -104,9 +104,11 @@ class Index
                 
                 foreach ($downloadInfo as $info) {
                     $id = $info['id'];
+                    $printInfo = sprintf('%s; Song ID: %s; Song Info: %s ', $prcessName, $id, $info['name']);
                     if (!$info['url']) {
-                        $this->logger->info('Song ID: ' . $id . ' 地址无法获取，可能是版权问题。');
-                        $this->logger->info('尝试使用其他API获取...');
+                        $this->logger->info($printInfo . '地址无法获取，可能是版权问题。');
+                        $this->logger->info($printInfo . '尝试使用其他API获取...');
+
                         $api = new Bzqll($this->logger);
                         $otherInfo = $api->getSearch([
                             'title'     => $info['name'],
@@ -132,7 +134,7 @@ class Index
                     }
 
                     $fileName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '&', $fileName) . '_1';
-                    $this->logger->info($prcessName . ' 开始下载:(临时文件名) ' . $fileName);
+                    $this->logger->info($printInfo . '开始下载:(临时文件名) ' . $fileName);
                     $filenamePath = sprintf('%s/%s.%s', $this->downloadPath, $fileName, $musicType);
 
                     $realfileName   = str_replace('_1', '', $fileName);
@@ -143,8 +145,8 @@ class Index
                         $this->executor->request->setUrl($downloadUrl);
                         $this->executor->request->setTimeout(60);
                         $this->executor->request->download($filenamePath);
-                        $this->logger->info($prcessName . ' 下载完成: ' . $fileName);
-                        $this->logger->info($prcessName . ' 准备添加元数据 ' . $fileName);
+                        $this->logger->info($printInfo . ' 下载完成: ' . $fileName);
+                        $this->logger->info($printInfo . ' 准备添加元数据 ' . $fileName);
 
                         $ffmpeg = FFMpeg::create();
                         $audio = $ffmpeg->open($filenamePath);
@@ -154,10 +156,10 @@ class Index
                             'album'     => $alName,
                         ]);
                         $audio->save(new Mp3(), $realfilenamePath);
-                        $this->logger->info($prcessName . ' 元数据添加完成 (真正文件名): ' . $realfileName);
+                        $this->logger->info($printInfo . ' 元数据添加完成 (真正文件名): ' . $realfileName);
                         unlink($filenamePath);
                     } else {
-                        $this->logger->info($prcessName . ' 当前文件已经存在(真正文件名): ' . $realfilenamePath);
+                        $this->logger->info($printInfo . ' 当前文件已经存在(真正文件名): ' . $realfilenamePath);
                     }
                 }
                 exit(0);

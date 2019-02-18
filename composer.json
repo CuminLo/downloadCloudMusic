@@ -4,8 +4,7 @@
     },
     "autoload": {
         "psr-4": {
-            "CuminLo\\": "src/",
-            "CuminLo\\Nets\\NetEase\\": "src/163/"
+            "CuminLo\\": "src/"
         }
     }
 }
