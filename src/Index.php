@@ -122,13 +122,17 @@ class Index
 
                     $downloadUrl = $info['url'];
 
-                    $arName = join(' & ', $info['artists']);
+                    $arName = join('、', $info['artists']);
 
                     $alName     = $info['album'];
                     $musicType  = $info['type'];
 
                     if ($alName) {
-                        $fileName = sprintf('%s - %s - %s', $info['name'], $arName, $alName);
+                        if ($info['name'] == $alName) {
+                            $fileName = sprintf('%s - %s', $info['name'], $arName);
+                        } else {
+                            $fileName = sprintf('%s - %s - %s', $info['name'], $arName, $alName);
+                        }
                     } else {
                         $fileName = sprintf('%s - %s', $info['name'], $arName);
                     }
