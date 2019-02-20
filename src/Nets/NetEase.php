@@ -2,26 +2,32 @@
 namespace CuminLo\Nets;
 
 use CuminLo\MusicInterface;
+use Metowolf\Meting;
 
 class NetEase implements MusicInterface
 {
     public $request;
     public $logger;
+    public $api;
 
     public function __construct($logger)
     {
         $this->request  = new \CuminLo\Request();
+        $this->request->setReferer('https://music.163.com/');
+
         $this->logger   = $logger;
+        $this->api      = new Meting('netease');
+        $this->api->format(false);
     }
 
     public function playListUrl() :string
     {
-        return 'https://music.163.com/api/v3/playlist/detail';
+        return '';
     }
 
     public function songUrl() :string
     {
-        return 'http://music.163.com/api/song/detail';
+        return '';
     }
 
     public function searchUrl(array $params) :string
@@ -37,10 +43,12 @@ class NetEase implements MusicInterface
     public function getDetail(string $url) :array
     {
         if (stripos($url, 'song') !== false) { //单曲
-            $this->logger->info('单曲');
             return $this->getSong($url);
+        } elseif (stripos($url, 'artist')) { //歌手
+            return $this->getArtist($url);
+        } elseif (stripos($url, 'album')) { //专辑
+            return $this->getAlbum($url);
         } else {
-            $this->logger->info('歌单');
             return $this->getPlayList($url);
         }
     }
@@ -49,7 +57,7 @@ class NetEase implements MusicInterface
     {
         $id = $this->getId($url);
 
-        return $this->getSongDetail($id);
+        return [$this->getSongDetail($id)];
     }
 
     public function getId(string $url) :string
@@ -58,79 +66,95 @@ class NetEase implements MusicInterface
         return $id;
     }
 
+    public function makeSongs(string $songs) :array
+    {
+        $songs = json_decode($songs, true);
+        $data = [];
+        foreach ($songs as $song) {
+            $id = $song['id'];
+            $data[] = $this->getSongDetail($id);
+        }
+        return $data;
+    }
+
+    public function makeSongDetail(array $song)
+    {
+        $id = $song['id'];
+
+        $artists = []; //歌手
+        if (isset($song['ar'])) {
+            foreach ($song['ar'] as $v) {
+                $artists[] = $v['name'];
+            }
+        }
+        if (isset($song['artist'])) {
+            $artists = $song['artist'];
+        }
+
+        $album = $song['al'] ?? $song['album'] ?? '';
+        $album = $album['name'] ?? '';
+
+        $musicInfo = $song['h'] ?? $song['m'] ?? $song['l'] ?? '';
+
+        $br = $musicInfo['bitrate'] ?? '320000';
+
+        return [
+            'name'          => $song['name'],
+            'id'            => $song['id'],
+            'artists'       => $artists,
+            'album'         => $album,
+            'bitrate'       => $br,
+            'type'          => $musicInfo['extension'] ?? 'mp3',
+            'url'           => $this->getDownloadRealUrl($id, $br)
+        ];
+    }
+    
+    public function getArtist(string $url) :array
+    {
+        $this->logger->info('获取歌手热门列表...');
+
+        $id = $this->getId($url);
+
+        $songs = $this->api->format(true)->artist($id);
+
+        $this->logger->info('歌手列表获取完成');
+
+        return $this->makeSongs($songs);
+    }
+
+    public function getAlbum(string $url) :array
+    {
+        $this->logger->info('获取专辑列表...');
+
+        $id = $this->getId($url);
+
+        $songs = $this->api->format(true)->album($id);
+
+        $this->logger->info('专辑详情列表获取完成');
+
+        return $this->makeSongs($songs);
+    }
+
     public function getPlayList(string $url) :array
     {
         $this->logger->info('获取歌单详情列表...');
 
-        $playListRequestUrl = $this->playListUrl();
-
         $playListId = $this->getId($url);
 
-        $requestParams = [
-            'id'    => $playListId,
-            's'     => 0,
-            'n'     => '1000',
-            't'     => '0',
-        ];
+        $songs = $this->api->format(true)->playlist($playListId);
 
-        $this->request->setUrl($playListRequestUrl);
-        $this->request->setRequestType(\CuminLo\Request::REQUEST_METHOD_POST);
-        $this->request->setPostFields($requestParams);
+        $this->logger->info('歌单详情列表获取完成');
 
-        $this->request->execute();
-
-        $body = json_decode($this->request->getResponseBody(), true);
-
-        $tracks = $body['playlist']['tracks'];
-        $this->logger->info('歌单详情列表获取完成，准备拼装数据');
-
-        $data = [];
-
-        foreach ($tracks as $track) {
-            $temp = [];
-
-            $soundId = $track['id'];
-
-            $artists = []; //歌手
-            foreach ($track['ar'] as $v) {
-                $artists[] = $v['name'];
-            }
-
-            $album  = $track['al']['name'];
-            $picUrl = $track['al']['picUrl'];
-
-            $musicInfo = $track['h'];
-
-            $temp['name']    = $track['name'];
-            $temp['id']      = $soundId;
-            $temp['type']    = 'mp3';
-            $temp['artists'] = $artists;
-            $temp['bitrate'] = $musicInfo['br'];
-            $temp['album']   = $album;
-            $temp['pic']     = $picUrl;
-            $temp['url']     = $this->getDownloadRealUrl($soundId);
-
-            $data[] = $temp;
-        }
-
-        return $data;
+        return $this->makeSongs($songs);
     }
 
-    public function getSongDetail($id)
+    public function getSongDetail(string $id)
     {
-        $requestUrl = $this->songUrl();
+        $this->api->format(false);
+        
+        $songs = $this->api->song($id);
 
-        $requestParams = [
-            'ids'   => json_encode([$id]),
-        ];
-
-        $this->request->setUrl($requestUrl);
-        $this->request->setRequestType(\CuminLo\Request::REQUEST_METHOD_POST);
-        $this->request->setPostFields($requestParams);
-        $this->request->execute();
-
-        $body = json_decode($this->request->getResponseBody(), true);
-        $songs = $body['songs'];
+        $songs = json_decode($songs, true)['songs'];
 
         foreach ($songs as $song) {
             if ($song['id'] != $id) {
@@ -138,54 +162,37 @@ class NetEase implements MusicInterface
             }
 
             $artists = []; //歌手
-            foreach ($song['artists'] as $v) {
+            foreach ($song['ar'] as $v) {
                 $artists[] = $v['name'];
             }
 
-            $album = $song['album']['name']; //专辑
+            $album = $song['al']['name']; //专辑
 
-            $musicInfo = $song['hMusic'];
+            $musicInfo = $song['h'] ?? $song['m'] ?? $song['l'] ?? '';
 
-            return [
-                [
-                    'name'          => $song['name'],
-                    'id'            => $song['id'],
-                    'artists'       => $artists,
-                    'album'         => $album,
-                    'bitrate'       => $musicInfo['bitrate'],
-                    'type'          => $musicInfo['extension'],
-                    'pic'           => $song['album']['picUrl'],
-                    'url'           => $this->getDownloadRealUrl($id)
-                ]
-            ];
+            $br = $musicInfo['bitrate'] ?? '320000';
+
+            return $this->makeSongDetail($song);
         }
     }
-    
-    public function getDownloadRealUrl(string $id) :string
+
+    public function getDownloadRealUrl(string $id, int $br = 320000) :string
     {
         $this->logger->info('Song ID: ' . $id .  ' 准备获取歌曲下载的地址...');
-        $requestUrl = 'http://music.163.com/api/song/enhance/player/url';
 
-        $requestParams = [
-            'ids' => json_encode([$id]),
-            'br'  => '320000',
-        ];
+        $body = $this->api->url($id);
 
-        $this->request->setUrl($requestUrl);
-        $this->request->setRequestType(\CuminLo\Request::REQUEST_METHOD_POST);
-        $this->request->setPostFields($requestParams);
-        $this->request->execute();
-
-        $body = json_decode($this->request->getResponseBody(), true);
+        $body = json_decode($body, true);
 
         if (!isset($body['data'])) { //发生错误
-            return $body['msg'] . $body['code'];
+            $this->logger->info('Song ID: ' . $id . ' 地址无法获取');
+            return '';
         }
 
         foreach ($body['data'] as $item) {
             if ($item['id'] == $id) {
                 if (!$item['url']) {
-                    $this->logger->info('Song ID: ' . $id . ' 地址无法获取，可能是版权问题。');
+                    $this->logger->info('Song ID: ' . $id . ' 地址无法获取');
                     return '';
                 } else {
                     $realUrl = $item['url'];

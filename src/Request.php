@@ -20,6 +20,8 @@ class Request
     public $requestType;
     public $postFields;
     public $referer;
+    public $cookie;
+
     public $httpHeader          = [];
     private $defaultHttpHeader  = [];
 
@@ -61,7 +63,7 @@ class Request
    
     public function setReferer($referer)
     {
-        $this->httpHeader[] = 'Referer: ' . $referer;
+        $this->httpHeader['Referer'] = $referer;
     }
 
     public function setPostFields($postFields)
@@ -69,9 +71,16 @@ class Request
         $this->postFields = http_build_query($postFields);
     }
 
-    public function setHttpHeader($httpHeader)
+    public function setHttpHeader(array $httpHeader)
     {
-        $this->httpHeader = $httpHeader;
+        foreach ($httpHeader as $key => $header) {
+            $this->httpHeader[$key] = $header;
+        }
+    }
+
+    public function setCookie($cookie)
+    {
+        $this->cookie = $cookie;
     }
 
     public function getResponseBody()
@@ -82,6 +91,13 @@ class Request
     public function getResponseHeader()
     {
         return $this->responseHeader;
+    }
+
+    public function __get($name)
+    {
+        if (property_exists($this, $name)) {
+            return $this->$name;
+        }
     }
 
     public function execute()
@@ -107,12 +123,20 @@ class Request
             curl_setopt($ch, CURLOPT_SSL_VERIFYSTATUS, false);
         }
 
-        if ($this->httpHeader) {
-            $this->defaultHttpHeader = array_merge($this->defaultHttpHeader, $this->httpHeader);
+        if ($this->cookie) {
+            curl_setopt($ch, CURLOPT_COOKIE, $this->cookie);
         }
 
-        if ($this->defaultHttpHeader) {
-            curl_setopt($ch, CURLOPT_HEADEROPT, $this->defaultHttpHeader);
+        if ($this->httpHeader) {
+            $this->httpHeader = array_merge($this->defaultHttpHeader, $this->httpHeader);
+        }
+
+        if ($this->httpHeader) {
+            $this->httpHeader = array_map(function ($k, $v) {
+                return $k . ': ' . $v;
+            }, array_keys($this->httpHeader), $this->httpHeader);
+
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->httpHeader);
         }
 
         curl_setopt($ch, CURLOPT_URL, $this->url);
@@ -121,6 +145,8 @@ class Request
         curl_setopt($ch, CURLOPT_AUTOREFERER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
         curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($ch, CURLOPT_ENCODING, '');
+        curl_setopt($ch, CURLOPT_IPRESOLVE, 1);
         curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -166,7 +192,7 @@ class Request
         }
 
         if ($this->defaultHttpHeader) {
-            curl_setopt($ch, CURLOPT_HEADEROPT, $this->defaultHttpHeader);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->defaultHttpHeader);
         }
 
         curl_setopt($ch, CURLOPT_URL, $this->url);
@@ -175,6 +201,7 @@ class Request
         curl_setopt($ch, CURLOPT_AUTOREFERER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
         curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($ch, CURLOPT_ENCODING, '');
         curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_FILE, $fp);

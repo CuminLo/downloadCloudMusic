@@ -11,7 +11,7 @@ return array(
     'Symfony\\Component\\Filesystem\\' => array($vendorDir . '/symfony/filesystem'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
     'Monolog\\' => array($vendorDir . '/monolog/monolog/src/Monolog'),
+    'Metowolf\\' => array($vendorDir . '/metowolf/meting/src'),
     'Doctrine\\Common\\Cache\\' => array($vendorDir . '/doctrine/cache/lib/Doctrine/Common/Cache'),
-    'CuminLo\\Nets\\NetEase\\' => array($baseDir . '/src/163'),
     'CuminLo\\' => array($baseDir . '/src'),
 );

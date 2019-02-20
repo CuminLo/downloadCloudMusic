@@ -1,6 +1,7 @@
 {
     "require": {
-        "php-ffmpeg/php-ffmpeg": "^0.13.0"
+        "php-ffmpeg/php-ffmpeg": "^0.13.0",
+        "metowolf/meting": "^1.5"
     },
     "autoload": {
         "psr-4": {

@@ -9,6 +9,7 @@ use FFMpeg\FFMpeg;
 use FFMpeg\Media\Audio;
 use FFMpeg\Filters\Audio\AddMetadataFilter;
 use FFMpeg\Format\Audio\Mp3;
+use FFMpeg\FFProbe;
 
 class Index
 {
@@ -17,6 +18,9 @@ class Index
     private $executor;
 
     public $downloadPath;
+
+    public $metadata = false;
+    public $precess  = 10;
 
     public function __construct(string $downloadPath)
     {
@@ -30,14 +34,29 @@ class Index
         if (!is_dir($this->downloadPath)) {
             $this->logger->info('目录不存在，正在创建 ...');
             mkdir($this->downloadPath);
-            $this->logger->info('创建完成 ...');
+            $this->logger->info('创建完成');
         }
+    }
+
+    public function setMetadata(bool $metadata) :Index
+    {
+        $this->metadata = $metadata;
+        return $this;
+    }
+
+    public function setPrecess(int $precess) :Index
+    {
+        if ($precess > 0) {
+            $this->precess = $precess;
+        }
+        return $this;
     }
 
     public function download(array $url)
     {
         $this->logger->info('准备下载');
 
+        $downloadInfos = [];
         foreach ($url as $site) {
             $urlInfo = parse_url($site);
 
@@ -51,9 +70,11 @@ class Index
             }
     
             $downloadInfo = $this->preDownload($site);
-    
-            $this->starDownload($downloadInfo);
+
+            $downloadInfos = array_merge($downloadInfos, $downloadInfo);
         }
+
+        $this->starDownload($downloadInfos);
     }
 
     public function preDownload(string $url) :array
@@ -61,12 +82,20 @@ class Index
         return $this->executor->getDetail($url);
     }
 
+    public function downloadFile(string $downloadUrl, string $downloadPath) :void
+    {
+        $this->executor->request->setRequestType('GET');
+        $this->executor->request->setUrl($downloadUrl);
+        $this->executor->request->setTimeout(60);
+        $this->executor->request->download($downloadPath);
+    }
+
     public function starDownload(array $downloadInfo)
     {
         $total = count($downloadInfo);
 
-        $max = 20; //创建最大进程数
-        if ($total <= $max) {
+        $max = $this->precess;
+        if ($total < $max) {
             $max = 1;
         }
 
@@ -83,14 +112,9 @@ class Index
 
             if ($pid) { //父进程
                 cli_set_process_title('Download Process Master');
-
-                pcntl_signal(SIGHUP, function () use ($pid) {
-                    $this->logger->info('收到子进程退出的信号');
-                    pcntl_waitpid($pid, $status, WNOHANG);
-                });
             } elseif ($pid == 0) { //子进程
                 cli_set_process_title('Download Process ' . $i);
-                $prcessName = 'Process ' . $i;
+                $precessName = 'Process ' . $i;
 
                 //每个进程处理自己的下载地址
                 $offset = ($i - 1) * $task;
@@ -104,10 +128,9 @@ class Index
                 
                 foreach ($downloadInfo as $info) {
                     $id = $info['id'];
-                    $printInfo = sprintf('%s; Song ID: %s; Song Info: %s ', $prcessName, $id, $info['name']);
+                    $printInfo = sprintf('%s; ID: %s; Song : %s; ', $precessName, $id, $info['name']);
                     if (!$info['url']) {
-                        $this->logger->info($printInfo . '地址无法获取，可能是版权问题。');
-                        $this->logger->info($printInfo . '尝试使用其他API获取...');
+                        $this->logger->info($printInfo . '地址无法获取, 尝试使用其他渠道...');
 
                         $api = new Bzqll($this->logger);
                         $otherInfo = $api->getSearch([
@@ -116,7 +139,7 @@ class Index
                         ]);
 
                         $info['name']    = $otherInfo['name'] ?? $info['name'];
-                        $info['artists'] = isset($otherInfo['singer']) ? $otherInfo['singer'] : $info['artists'];
+                        $info['artists'] = $otherInfo['singer'] ?? $info['artists'];
                         $info['url']     = $otherInfo['url'];
                     }
 
@@ -137,36 +160,76 @@ class Index
                         $fileName = sprintf('%s - %s', $info['name'], $arName);
                     }
 
-                    $fileName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '&', $fileName) . '_1';
-                    $this->logger->info($printInfo . '开始下载:(临时文件名) ' . $fileName);
-                    $filenamePath = sprintf('%s/%s.%s', $this->downloadPath, $fileName, $musicType);
+                    $fileName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '&', $fileName);
 
-                    $realfileName   = str_replace('_1', '', $fileName);
-                    $realfilenamePath = sprintf('%s/%s.%s', $this->downloadPath, $realfileName, $musicType);
-
-                    if (!is_file($realfilenamePath)) {
-                        $this->executor->request->setRequestType('GET');
-                        $this->executor->request->setUrl($downloadUrl);
-                        $this->executor->request->setTimeout(60);
-                        $this->executor->request->download($filenamePath);
-                        $this->logger->info($printInfo . ' 下载完成: ' . $fileName);
-                        $this->logger->info($printInfo . ' 准备添加元数据 ' . $fileName);
-
-                        $ffmpeg = FFMpeg::create();
-                        $audio = $ffmpeg->open($filenamePath);
-                        $audio->filters()->addMetadata([
-                            'title'     => $info['name'],
-                            'artist'    => $arName,
-                            'album'     => $alName,
-                        ]);
-                        $audio->save(new Mp3(), $realfilenamePath);
-                        $this->logger->info($printInfo . ' 元数据添加完成 (真正文件名): ' . $realfileName);
-                        unlink($filenamePath);
+                    if ($this->metadata) {
+                        $filenamePath       = sprintf('%s/%s.%s_1_1', $this->downloadPath, $fileName, $musicType);
+                        $realfileName       = str_replace('_1_1', '', $fileName);
+                        $realfilenamePath   = sprintf('%s/%s.%s', $this->downloadPath, $realfileName, $musicType);
+                        
+                        $this->logger->info($printInfo . '开始下载:(临时文件名) ' . $fileName . '_1_1');
+    
+                        if (!is_file($realfilenamePath)) {
+                            $this->downloadFile($downloadUrl, $filenamePath);
+                            $this->logger->info($printInfo . ' 数据准备完成，获取元数据: ' . $fileName);
+    
+                            $ffprobe    = FFProbe::create();
+                            try {
+                                $audioInfo  = $ffprobe->format($filenamePath);
+                            } catch (\Exception $e) { //我怀疑是ffmpeg这个操作有点问题 先这么试一下 发生异常的时候再来一次
+                                $audioInfo  = $ffprobe->format($filenamePath);
+                            }
+                            $tags       = $audioInfo->get('tags');
+                            $tagTitle   = $tags['title'] ?? '';
+    
+                            $audio = false;
+                            if (!$tagTitle) {
+                                $this->logger->info($printInfo . ' 准备添加元数据 ' . $fileName);
+                                $ffmpeg = FFMpeg::create();
+                                $audio = $ffmpeg->open($filenamePath);
+        
+                                $audio->filters()->addMetadata([
+                                    'title'     => $info['name'],
+                                    'artist'    => $arName,
+                                    'album'     => $alName,
+                                ]);
+                            }
+    
+                            if ($audio) {
+                                $audio->save(new Mp3(), $realfilenamePath);
+                                $this->logger->info($printInfo . ' 元数据添加完成 (真正文件名): ' . $realfileName);
+                                unlink($filenamePath);
+                            } else {
+                                $this->logger->info($printInfo . ' 下载完成(真正文件名): ' . $realfileName);
+                                rename($filenamePath, $realfilenamePath);
+                            }
+                        } else {
+                            $this->logger->info($printInfo . ' 当前文件已经存在(真正文件名): ' . $realfilenamePath);
+                        }
                     } else {
-                        $this->logger->info($printInfo . ' 当前文件已经存在(真正文件名): ' . $realfilenamePath);
+                        $filenamePath = sprintf('%s/%s.%s', $this->downloadPath, $fileName, $musicType);
+                        if (!is_file($filenamePath)) {
+                            $this->downloadFile($downloadUrl, $filenamePath);
+                            $this->logger->info($printInfo . ' 下载完成: ' . $fileName);
+                        } else {
+                            $this->logger->info($printInfo . ' 当前文件已经存在: ' . $filenamePath);
+                        }
                     }
                 }
                 exit(0);
+            }
+        }
+
+        //进程信号通讯不熟悉 先暂时这样好不好...
+        $precessNum = 0;
+        while (true) {
+            if ($precessNum == $max) {
+                $this->logger->info('所有歌曲下载完成...');
+                exit(0);
+            }
+            pcntl_waitpid($pid, $status, WUNTRACED);
+            if (pcntl_wifexited($status)) {
+                $precessNum++;
             }
         }
     }

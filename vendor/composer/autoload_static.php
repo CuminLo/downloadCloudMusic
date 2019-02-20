@@ -24,6 +24,7 @@ class ComposerStaticInit61b21e506062994cdcbfa950220eb0c1
         'M' => 
         array (
             'Monolog\\' => 8,
+            'Metowolf\\' => 9,
         ),
         'D' => 
         array (
@@ -31,7 +32,6 @@ class ComposerStaticInit61b21e506062994cdcbfa950220eb0c1
         ),
         'C' => 
         array (
-            'CuminLo\\Nets\\NetEase\\' => 21,
             'CuminLo\\' => 8,
         ),
     );
@@ -57,13 +57,13 @@ class ComposerStaticInit61b21e506062994cdcbfa950220eb0c1
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
         ),
+        'Metowolf\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/metowolf/meting/src',
+        ),
         'Doctrine\\Common\\Cache\\' => 
         array (
             0 => __DIR__ . '/..' . '/doctrine/cache/lib/Doctrine/Common/Cache',
-        ),
-        'CuminLo\\Nets\\NetEase\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/src/163',
         ),
         'CuminLo\\' => 
         array (
