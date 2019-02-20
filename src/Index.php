@@ -145,7 +145,13 @@ class Index
 
                     $downloadUrl = $info['url'];
 
-                    $arName = join('、', $info['artists']);
+                    if (count($info) > 2) { //有的合唱的人太多 受不了
+                        $originArName = join('、', $info['artists']);
+                        $arName       = join('、', array_slice($info['artists'], 0, 2));
+                    } else {
+                        $arName         = join('、', $info['artists']);
+                        $originArName   = join('、', $info['artists']);
+                    }
 
                     $alName     = $info['album'];
                     $musicType  = $info['type'];
@@ -190,7 +196,7 @@ class Index
         
                                 $audio->filters()->addMetadata([
                                     'title'     => $info['name'],
-                                    'artist'    => $arName,
+                                    'artist'    => $originArName,
                                     'album'     => $alName,
                                 ]);
                             }
