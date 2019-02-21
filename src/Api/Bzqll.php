@@ -170,7 +170,12 @@ class Bzqll implements MusicInterface
         $response = json_decode($response, true);
 
         if ($response['code'] != 200) {
-            return '';
+            sleep(15); //大佬的API不能访问的太过频繁了
+            $response = $this->request->getResponseBody();
+            $response = json_decode($response, true);
+            if ($response['code'] != 200) {
+                return [];
+            }
         }
 
         $data = $response['data'];
@@ -194,6 +199,11 @@ class Bzqll implements MusicInterface
                 }
             }
         }
+
+        if (!$firstValue) {
+            return [];
+        }
+
         //暂时这样 后面增加了其他的API就使用其他的API接口
         return [
             'url'   => $firstValue['url'],

@@ -11,7 +11,7 @@
 命令行执行：
 
 ```php
-php download.php --metadata=1 --precess=10 --url [url] --output [download_path
+php download.php --metadata=1 --process=10 --url [url] --output [download_path
 ```
 
 可以同时指定多个歌单或单曲：
@@ -30,14 +30,14 @@ php download.php --url https://y.qq.com/n/yqq/song/003JWNKf2kBHa1.html --url htt
         - 歌单地址像这样的 `https://y.qq.com/n/yqq/playlist/1372169940.html`
         - 单曲地址像这样的 `https://y.qq.com/n/yqq/song/003JWNKf2kBHa1.html`
 
-- output
+- output 下载歌曲保存目录
 > 选填 默认是当前项目下目录/Music
 
-- metadata
+- metadata 元数据
 > 选填 默认不处理; `--metadata=1` 开启 `--metadata=0` 不开启; 有些歌曲并没有元数据，可能在有些播放器显示的Title不正确;
 
-- precess
-> 选填 默认10， `--precess=10` 进程数
+- process
+> 选填 默认10， `--process=10` 进程数
 
 ### 项目说明
 

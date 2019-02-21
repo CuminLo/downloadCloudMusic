@@ -13,11 +13,11 @@ $options = getopt('u:o:', [
     'url:',
     'output:',
     'metadata::',
-    'precess::',
+    'process::',
 ]);
 
-$isMetadata = $options['metadata'] ?? false; //是否需要添加元数据信息
-$precess    = $options['precess'] ?? 1;//进程数
+$isMetadata      = $options['metadata'] ?? false; //是否需要添加元数据信息
+$process         = $options['process'] ?? 1;//进程数
 
 $url = $options['url'] ?? $options['u'] ?? null;
 if (!$url) {
@@ -27,7 +27,7 @@ if (!$url) {
 
 $downloadPath = $options['ouput'] ?? $options['o'] ?? null;
 if (!$downloadPath) {
-    $downloadPath = __DIR__ . '/Music';
+    $downloadPath = __DIR__ . '/Music2';
 }
 
 $face = new Index($downloadPath);
@@ -36,4 +36,7 @@ if (is_string($url)) {
     $url = [$url];
 }
 
-$face->setMetadata(boolval($isMetadata))->setPrecess(intval($precess))->download($url);
+$face
+    ->setMetadata(boolval($isMetadata))
+    ->setProcess(intval($process))
+    ->download($url);
