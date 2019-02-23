@@ -97,8 +97,7 @@ class Index
             $audio->filters()->addMetadata($metadata);
             return $audio;
         } catch (\Exception $e) {
-            throw new \Exception();
-            unlink($filenamePath);
+            throw new Exception('文件处理异常！');
         }
     }
 
@@ -184,7 +183,7 @@ class Index
                     $musicType  = $info['type'];
 
                     if ($alName) {
-                        if ($info['name'] == $alName) {
+                        if (mb_strtolower($info['name']) == mb_strtolower($alName)) {
                             $fileName = sprintf('%s - %s', $info['name'], $arName);
                         } else {
                             $fileName = sprintf('%s - %s - %s', $info['name'], $arName, $alName);
@@ -194,6 +193,14 @@ class Index
                     }
 
                     $fileName       = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|', '+'], '&', $fileName); //文件名的特殊字符
+                    if (mb_strlen($fileName) > 100) { //为啥你的歌曲名字那么长？
+                        $tempStart = mb_stripos($fileName, '&');
+                        if ($tempStart !== false) {
+                            $fileName = mb_substr($fileName, 0, $tempStart);
+                        } else {
+                            $fileName = mb_substr($fileName, 0, 100);
+                        }
+                    }
                     $filenamePath   = sprintf('%s/%s.%s', $this->downloadPath, $fileName, $musicType);
 
                     if (is_file($filenamePath)) {

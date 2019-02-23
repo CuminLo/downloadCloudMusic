@@ -27,7 +27,7 @@ if (!$url) {
 
 $downloadPath = $options['ouput'] ?? $options['o'] ?? null;
 if (!$downloadPath) {
-    $downloadPath = __DIR__ . '/Music2';
+    $downloadPath = __DIR__ . '/Music';
 }
 
 $face = new Index($downloadPath);
