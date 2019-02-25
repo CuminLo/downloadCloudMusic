@@ -152,6 +152,12 @@ class Request
         $response       = curl_exec($ch);
         $this->error    = curl_error($ch);
 
+        //https://stackoverflow.com/questions/9183178/can-php-curl-retrieve-response-headers-and-body-in-a-single-request
+        //list($header, $body) = explode("\r\n\r\n", $response, 2); 另外一种写法
+        //CURLINFO_HEADER_SIZE 老版本的 curl 不能正确获取代理的 size
+        //https://github.com/curl/curl/pull/60 这个问题里面修复了代理  curl 7.30.0
+        //依然推荐还是使用 CURLINFO_HEADER_SIZE 来获取
+
         $headerSize     = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         $this->httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
